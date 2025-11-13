@@ -680,7 +680,7 @@
                 zoom *= 0.999 ** delta;
                 // 限制缩放范围
                 if (false) zoom = 5;
-                if (zoom < 0.1) zoom = 0.1;
+                if (zoom < 0.8) zoom = 0.8;
                 
                 const point = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
                 fabricCanvas.zoomToPoint(point, zoom);
