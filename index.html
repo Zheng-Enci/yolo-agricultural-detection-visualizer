@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO检测结果可视化 - 网格显示</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            background: #2a2a2a;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        
+        .controls-panel {
+            width: 300px;
+            min-width: 300px;
+            background: #2a2a2a;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+
+        .header {
+            width: 300px;
+            min-width: 300px;
+            background: linear-gradient(135deg, #2d4a2e 0%, #1e3a1f 100%);
+            color: #e0e0e0;
+            padding: 25px 30px;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        
+        .header .upload-section {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .header .file-input-group {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+            margin: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .header .upload-section {
+                flex-direction: column;
+            }
+            
+            .header .file-input-group {
+                max-width: 100%;
+            }
+        }
+
+        .content {
+            padding: 30px;
+            display: flex;
+            gap: 20px;
+            min-height: calc(100vh - 200px);
+        }
+        
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .upload-section {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px dashed #4CAF50;
+        }
+        
+        .header .upload-section {
+            margin-bottom: 0;
+            background: rgba(30, 30, 30, 0.5);
+            border: 2px dashed rgba(76, 175, 80, 0.6);
+        }
+
+        .file-input-group {
+            margin: 15px 0;
+        }
+
+        .file-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .file-input-button:hover {
+            background: #66bb6a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .file-name {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #b0b0b0;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+        }
+        
+        .controls .btn {
+            width: 100%;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .control-group label {
+            min-width: 100px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+
+        .control-group input[type="number"],
+        .control-group input[type="color"] {
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            width: 100%;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        
+        .control-group input[type="number"] {
+            color: #e0e0e0;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 15px;
+            background: black;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .slider-label {
+            color: #b0b0b0;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .slider-label .current-value {
+            text-decoration: underline;
+            color: #e0e0e0;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .slider-wrapper input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .slider-wrapper input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 2px;
+            background: #1a3a5c;
+            border-radius: 1px;
+        }
+
+        .slider-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2196F3;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 3;
+        }
+
+        /* 为WebKit浏览器添加已填充部分的样式 */
+        .slider-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 2px;
+            width: var(--fill-width, 0%);
+            background: #2196F3;
+            border-radius: 1px;
+            transform: translateY(-50%);
+            z-index: 1;
+            transition: width 0.1s ease;
+        }
+
+        .slider-wrapper input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 2px;
+            background: #1a3a5c;
+            border-radius: 1px;
+        }
+
+        .slider-wrapper input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #2196F3;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .slider-wrapper input[type="range"]::-moz-range-progress {
+            height: 2px;
+            background: #2196F3;
+            border-radius: 1px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .slider-labels span {
+            flex: 1;
+            text-align: left;
+        }
+
+        .slider-labels span:nth-child(2) {
+            text-align: center;
+        }
+
+        .slider-labels span:nth-child(3) {
+            text-align: right;
+        }
+
+        .btn {
+            background: #2196F3;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .btn:hover {
+            background: #42a5f5;
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-danger {
+            background: #f44336;
+        }
+
+        .btn-danger:hover {
+            background: #ef5350;
+            box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        
+
+        .canvas-container {
+            text-align: center;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            overflow: auto;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #canvas {
+            border: 2px solid #555;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #b0b0b0;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            animation: slideIn 0.3s ease;
+            border: 2px solid #444;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #444;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #b0b0b0;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .modal-body {
+            color: #e0e0e0;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal.error .modal-title {
+            color: #ff6b6b;
+        }
+
+        .modal.error .modal-content {
+            border-color: #5a2f2f;
+        }
+
+        .modal.success .modal-title {
+            color: #4CAF50;
+        }
+
+        .modal.success .modal-content {
+            border-color: #4CAF50;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 左侧控制面板 -->
+    <div class="controls-panel">
+        <div class="controls" id="controls" style="display: none;">
+            <div class="slider-container">
+                <div class="slider-label">
+                    网格大小: <span class="current-value" id="gridSizeValue">640</span> px
+                </div>
+                <div class="slider-wrapper">
+                    <input type="range" id="gridSize" value="640" min="10" max="2000" step="10">
+                </div>
+                <div class="slider-labels">
+                    <span id="gridSizeMin">10</span>
+                    <span id="gridSizeMid">1005</span>
+                    <span id="gridSizeMax">2000</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>检测框颜色:</label>
+                <input type="color" id="boxColor" value="#ff0000">
+            </div>
+            <div class="control-group">
+                <label>网格颜色:</label>
+                <input type="color" id="gridColor" value="#00ff00">
+            </div>
+            <button class="btn" onclick="redrawGridAndDetections()">重新绘制网格</button>
+            <button class="btn" onclick="toggleGrid()">显示/隐藏网格</button>
+            <button class="btn" onclick="resetView()">重置视图</button>
+            <div class="slider-container">
+                <div class="slider-label">
+                    网格旋转角度: <span class="current-value" id="rotateValue">0</span> °
+                </div>
+                <div class="slider-wrapper">
+                    <input type="range" id="rotateSlider" value="0" min="-90" max="90" step="1">
+                </div>
+                <div class="slider-labels">
+                    <span id="rotateMin">-90</span>
+                    <span id="rotateMid">0</span>
+                    <span id="rotateMax">90</span>
+                </div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    网格左右平移: <span class="current-value" id="translateXValue">0</span> px
+                </div>
+                <div class="slider-wrapper">
+                    <input type="range" id="translateXSlider" value="0" min="-500" max="500" step="10">
+                </div>
+                <div class="slider-labels">
+                    <span id="translateXMin">-500</span>
+                    <span id="translateXMid">0</span>
+                    <span id="translateXMax">500</span>
+                </div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    网格上下平移: <span class="current-value" id="translateYValue">0</span> px
+                </div>
+                <div class="slider-wrapper">
+                    <input type="range" id="translateYSlider" value="0" min="-500" max="500" step="10">
+                </div>
+                <div class="slider-labels">
+                    <span id="translateYMin">-500</span>
+                    <span id="translateYMid">0</span>
+                    <span id="translateYMax">500</span>
+                </div>
+            </div>
+            <button class="btn btn-danger" onclick="clearCanvas()">清空</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="content">
+            <!-- 右侧显示面板 -->
+            <div class="right-panel">
+                <!-- 加载提示 -->
+                <div class="loading" id="loading">
+                    <p>🔄 正在处理文件...</p>
+                </div>
+
+                <!-- Canvas容器 -->
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">
+                    <span id="modalIcon">⚠️</span>
+                    <span id="modalTitleText">提示</span>
+                </div>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                消息内容
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="modalOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>🌽 YOLO检测结果可视化</h1>
+        <p>选择本地图片和YOLO标注文件，网格化显示检测结果</p>
+        <div class="upload-section">
+            <div class="file-input-group">
+                <label>📷 选择图片文件:</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageInput" accept="image/*">
+                    <div class="file-input-button">选择图片文件</div>
+                </div>
+                <div class="file-name" id="imageFileName">未选择</div>
+            </div>
+
+            <div class="file-input-group">
+                <label>📄 选择YOLO标注文件 (.txt):</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="yoloInput" accept=".txt">
+                    <div class="file-input-button">选择YOLO标注文件</div>
+                </div>
+                <div class="file-name" id="yoloFileName">未选择</div>
+            </div>
+        </div>
+        <div style="padding: 10px; background: #2a2a2a; border-radius: 5px; font-size: 12px; color: #e0e0e0; border: 1px solid #444;">
+            <strong>💡 操作提示：</strong><br>
+            鼠标滚轮 = 缩放<br>
+            Alt/Ctrl + 拖拽 = 平移<br>
+            拖动滑块可旋转/平移网格
+        </div>
+    </div>
+
+    <script>
+        let canvas;
+        let fabricCanvas;
+        let currentImage = null;
+        let detections = [];
+        let originalDetections = []; // 保存原始检测结果（不受旋转影响）
+        let imageWidth = 0;
+        let imageHeight = 0;
+        let gridVisible = true;
+        let gridObjects = [];
+        let detectionObjects = []; // 检测结果矩形对象数组
+        let imageFile = null;
+        let yoloFile = null;
+
+        // 初始化Fabric.js Canvas
+        function initCanvas() {
+            canvas = document.getElementById('canvas');
+            fabricCanvas = new fabric.Canvas('canvas', {
+                selection: false,
+                preserveObjectStacking: true
+            });
+            
+            canvas.oncontextmenu = function(e) { e.preventDefault(); };
+            
+            // 启用缩放功能（鼠标滚轮）
+            fabricCanvas.on('mouse:wheel', function(opt) {
+                const delta = opt.e.deltaY;
+                let zoom = fabricCanvas.getZoom();
+                zoom *= 0.999 ** delta;
+                // 限制缩放范围
+                if (zoom > 5) zoom = 5;
+                if (zoom < 0.1) zoom = 0.1;
+                
+                const point = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
+                fabricCanvas.zoomToPoint(point, zoom);
+                
+                // 缩放后重新绘制网格，以调整线宽
+                if (currentImage) {
+                    drawGrid();
+                }
+                
+                opt.e.preventDefault();
+                opt.e.stopPropagation();
+            });
+            
+            // 启用平移功能（拖拽画布）
+            let isDragging = false;
+            let lastPosX = 0;
+            let lastPosY = 0;
+            
+            fabricCanvas.on('mouse:down', function(opt) {
+                const evt = opt.e;
+                if (evt.altKey === true || evt.ctrlKey === true || evt.button === 2) {
+                    isDragging = true;
+                    fabricCanvas.selection = false;
+                    lastPosX = evt.clientX;
+                    lastPosY = evt.clientY;
+                }
+            });
+            
+            fabricCanvas.on('mouse:move', function(opt) {
+                if (isDragging) {
+                    const e = opt.e;
+                    const vpt = fabricCanvas.viewportTransform;
+                    vpt[4] += e.clientX - lastPosX;
+                    vpt[5] += e.clientY - lastPosY;
+                    fabricCanvas.requestRenderAll();
+                    lastPosX = e.clientX;
+                    lastPosY = e.clientY;
+                }
+            });
+            
+            fabricCanvas.on('mouse:up', function(opt) {
+                isDragging = false;
+                fabricCanvas.selection = false;
+            });
+        }
+
+        // 图片文件选择
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                imageFile = e.target.files[0];
+                document.getElementById('imageFileName').textContent = imageFile.name;
+                hideError();
+                
+                // 如果两个文件都已选择，自动加载
+                if (yoloFile) {
+                    loadFiles();
+                }
+            }
+        });
+
+        // YOLO文件选择
+        document.getElementById('yoloInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                yoloFile = e.target.files[0];
+                document.getElementById('yoloFileName').textContent = yoloFile.name;
+                hideError();
+                
+                // 如果两个文件都已选择，自动加载
+                if (imageFile) {
+                    loadFiles();
+                }
+            }
+        });
+
+        // 加载文件
+        async function loadFiles() {
+            if (!imageFile || !yoloFile) {
+                showError('请同时选择图片文件和YOLO标注文件');
+                return;
+            }
+
+            showLoading(true);
+            hideError();
+
+            try {
+                // 读取图片
+                const imageUrl = URL.createObjectURL(imageFile);
+                const img = await loadImage(imageUrl);
+                
+                // 保存原始尺寸
+                originalImageWidth = img.width;
+                originalImageHeight = img.height;
+                imageWidth = originalImageWidth;
+                imageHeight = originalImageHeight;
+
+                // 读取YOLO文件（使用原始尺寸解析，不受旋转影响）
+                const text = await readYoloFile(yoloFile);
+                originalDetections = parseYoloData(text, originalImageWidth, originalImageHeight);
+                detections = originalDetections.map(d => ({...d})); // 深拷贝
+
+                // 显示图片（等待异步完成）
+                await displayImage(img, imageUrl);
+
+
+                // 绘制网格和检测结果
+                drawGrid();
+                drawDetections();
+
+                // 显示控制面板
+                document.getElementById('controls').style.display = 'flex';
+
+            } catch (error) {
+                showError('加载文件失败: ' + error.message);
+                console.error(error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 加载图片并获取尺寸
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
+        // 读取YOLO文件
+        function readYoloFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file, 'utf-8');
+            });
+        }
+
+        // 解析YOLO数据
+        function parseYoloData(text, imgWidth, imgHeight) {
+            const detections = [];
+            const lines = text.split('\n').filter(line => line.trim());
+
+            for (const line of lines) {
+                const parts = line.trim().split(/\s+/);
+                
+                if (parts.length === 5) {
+                    // 标准YOLO格式 (5列): class x_center y_center width height
+                    const [cls, x_center_norm, y_center_norm, width_norm, height_norm] = parts.map(Number);
+                    const confidence = 1.0;
+                    
+                    detections.push({
+                        class: cls,
+                        confidence: confidence,
+                        x_center_norm: x_center_norm,
+                        y_center_norm: y_center_norm,
+                        width_norm: width_norm,
+                        height_norm: height_norm
+                    });
+                } else if (parts.length === 6) {
+                    // 带置信度格式 (6列): class confidence x_center y_center width height
+                    const [cls, confidence, x_center_norm, y_center_norm, width_norm, height_norm] = parts.map(Number);
+                    
+                    detections.push({
+                        class: cls,
+                        confidence: confidence,
+                        x_center_norm: x_center_norm,
+                        y_center_norm: y_center_norm,
+                        width_norm: width_norm,
+                        height_norm: height_norm
+                    });
+                }
+            }
+
+            return detections;
+        }
+
+        // 显示图片
+        function displayImage(img, imageUrl) {
+            return new Promise((resolve) => {
+                const maxWidth = 1200;
+                const scale = Math.min(maxWidth / img.width, 1);
+                
+                // 重置旋转角度和平移
+                gridRotationAngle = 0;
+                gridTranslateX = 0;
+                gridTranslateY = 0;
+                
+                // 重置滑动条和显示值
+                const rotateSlider = document.getElementById('rotateSlider');
+                if (rotateSlider) {
+                    rotateSlider.value = 0;
+                    updateSliderFill(rotateSlider);
+                }
+                if (document.getElementById('rotateValue')) {
+                    document.getElementById('rotateValue').textContent = '0';
+                }
+                
+                const translateXSlider = document.getElementById('translateXSlider');
+                if (translateXSlider) {
+                    translateXSlider.value = 0;
+                    updateSliderFill(translateXSlider);
+                }
+                if (document.getElementById('translateXValue')) {
+                    document.getElementById('translateXValue').textContent = '0';
+                }
+                
+                const translateYSlider = document.getElementById('translateYSlider');
+                if (translateYSlider) {
+                    translateYSlider.value = 0;
+                    updateSliderFill(translateYSlider);
+                }
+                if (document.getElementById('translateYValue')) {
+                    document.getElementById('translateYValue').textContent = '0';
+                }
+                
+                fabric.Image.fromURL(imageUrl, (fabricImg) => {
+                    fabricImg.scale(scale);
+                    fabricCanvas.setWidth(img.width * scale);
+                    fabricCanvas.setHeight(img.height * scale);
+                    
+                    // 设置背景图片，确保可以旋转
+                    fabricImg.set({
+                        left: 0,
+                        top: 0,
+                        originX: 'left',
+                        originY: 'top',
+                        angle: 0
+                    });
+                    
+                    fabricCanvas.setBackgroundImage(fabricImg, fabricCanvas.renderAll.bind(fabricCanvas), {
+                        scaleX: scale,
+                        scaleY: scale
+                    });
+
+                    currentImage = fabricImg;
+                    // 重置视图
+                    resetView();
+                    resolve(); // 图片加载完成后resolve
+                }, { crossOrigin: 'anonymous' });
+            });
+        }
+
+    
+        // 绘制网格（高效算法：使用Canvas原生API批量绘制，支持旋转和动态线宽）
+        let gridPatternImage = null; // 缓存网格图案
+        
+        function drawGrid() {
+            if (!currentImage) return;
+
+            const gridSize = parseInt(document.getElementById('gridSize').value);
+            const gridColor = document.getElementById('gridColor').value;
+            
+            const scale = currentImage.scaleX || 1;
+            const scaledWidth = imageWidth * scale;
+            const scaledHeight = imageHeight * scale;
+            const actualGridSize = gridSize * scale;
+
+            // 获取当前画布的缩放比例
+            const zoom = fabricCanvas.getZoom();
+            
+            // 根据缩放比例动态调整线宽：缩放越大，线越细；缩放越小，线越粗
+            // 基准线宽为1，当zoom=1时线宽为1，zoom=2时线宽为0.5，zoom=0.5时线宽为2
+            const baseLineWidth = 1;
+            const dynamicLineWidth = baseLineWidth / zoom;
+            
+            // 限制线宽范围，避免过粗或过细
+            const minLineWidth = 0.5;
+            const maxLineWidth = 3;
+            const lineWidth = Math.max(minLineWidth, Math.min(maxLineWidth, dynamicLineWidth));
+
+            // 清除之前的网格对象
+            gridObjects.forEach(obj => fabricCanvas.remove(obj));
+            gridObjects = [];
+
+            // 计算网格中心点
+            const centerX = scaledWidth / 2;
+            const centerY = scaledHeight / 2;
+
+            // 使用fabric.Group批量绘制（支持旋转）
+            const lines = [];
+            const scaledGridSize = actualGridSize;
+            
+            // 批量创建垂直线（在旋转后的坐标系中）
+            const rad = (gridRotationAngle * Math.PI) / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            
+            // 计算需要绘制的网格线数量（考虑旋转后的覆盖范围）
+            const diagonal = Math.sqrt(scaledWidth * scaledWidth + scaledHeight * scaledHeight);
+            const gridCountX = Math.ceil(diagonal / scaledGridSize);
+            const gridCountY = Math.ceil(diagonal / scaledGridSize);
+            
+            // 创建垂直线（网格坐标系，从(0,0)开始，需要调整到相对于图片中心）
+            // 计算需要绘制的网格范围（确保覆盖旋转后的区域）
+            const gridStartX = -Math.ceil(diagonal / scaledGridSize) * scaledGridSize;
+            const gridEndX = scaledWidth + Math.ceil(diagonal / scaledGridSize) * scaledGridSize;
+            const gridStartY = -Math.ceil(diagonal / scaledGridSize) * scaledGridSize;
+            const gridEndY = scaledHeight + Math.ceil(diagonal / scaledGridSize) * scaledGridSize;
+            
+            for (let x = gridStartX; x <= gridEndX; x += scaledGridSize) {
+                // 将网格坐标转换为相对于图片中心的坐标
+                const line = new fabric.Line([x - centerX, gridStartY - centerY, x - centerX, gridEndY - centerY], {
+                    stroke: gridColor,
+                    strokeWidth: lineWidth,
+                    selectable: false,
+                    evented: false,
+                    originX: 'center',
+                    originY: 'center'
+                });
+                lines.push(line);
+            }
+            
+            // 创建水平线（网格坐标系，从(0,0)开始）
+            for (let y = gridStartY; y <= gridEndY; y += scaledGridSize) {
+                // 将网格坐标转换为相对于图片中心的坐标
+                const line = new fabric.Line([gridStartX - centerX, y - centerY, gridEndX - centerX, y - centerY], {
+                    stroke: gridColor,
+                    strokeWidth: lineWidth,
+                    selectable: false,
+                    evented: false,
+                    originX: 'center',
+                    originY: 'center'
+                });
+                lines.push(line);
+            }
+            
+            // 使用Group批量添加并整体旋转和平移（比逐个add快）
+            if (lines.length > 0) {
+                const gridGroup = new fabric.Group(lines, {
+                    selectable: false,
+                    evented: false,
+                    left: centerX + gridTranslateX,
+                    top: centerY + gridTranslateY,
+                    originX: 'center',
+                    originY: 'center',
+                    angle: gridRotationAngle
+                });
+                
+                fabricCanvas.add(gridGroup);
+                gridObjects.push(gridGroup);
+            }
+
+            hideError();
+            fabricCanvas.renderAll();
+        }
+
+        // 重新绘制网格和检测结果
+        function redrawGridAndDetections() {
+            if (currentImage) {
+                drawGrid();
+                drawDetections();
+            }
+        }
+
+        // 绘制检测结果（优化版，支持网格旋转）
+        function drawDetections() {
+            if (!currentImage || detections.length === 0) return;
+
+            // 清除之前的检测结果矩形
+            detectionObjects.forEach(obj => fabricCanvas.remove(obj));
+            detectionObjects = [];
+
+            const boxColor = document.getElementById('boxColor').value;
+            const scale = currentImage.scaleX || 1;
+            const gridSize = parseInt(document.getElementById('gridSize').value);
+            const scaledGridSize = gridSize * scale;
+
+            // 使用缩放后的坐标系统（与网格绘制保持一致）
+            const scaledWidth = imageWidth * scale;
+            const scaledHeight = imageHeight * scale;
+            const centerX = scaledWidth / 2;
+            const centerY = scaledHeight / 2;
+
+            // 计算旋转角度（逆时针）
+            const rad = (gridRotationAngle * Math.PI) / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            const cosInv = Math.cos(-rad); // 反向旋转
+            const sinInv = Math.sin(-rad); // 反向旋转
+            
+            const gridMap = new Map();
+
+            // 计算每个检测结果所在的网格
+            detections.forEach(det => {
+                // 转换为缩放后的像素坐标（图片坐标系）
+                let x_center = det.x_center_norm * scaledWidth;
+                let y_center = det.y_center_norm * scaledHeight;
+                
+                // 先应用反向平移（将检测点转换到网格坐标系中）
+                x_center -= gridTranslateX;
+                y_center -= gridTranslateY;
+                
+                // 将坐标转换为以图片中心为原点的相对坐标
+                const relX = x_center - centerX;
+                const relY = y_center - centerY;
+                
+                // 反向旋转坐标（将检测点转换到网格坐标系中）
+                // 网格坐标系是旋转后的坐标系，所以需要反向旋转检测点
+                const gridX = relX * cosInv - relY * sinInv + centerX;
+                const gridY = relX * sinInv + relY * cosInv + centerY;
+                
+                // 确定所在网格（网格从左上角(0,0)开始）
+                const gridCol = Math.floor(gridX / scaledGridSize);
+                const gridRow = Math.floor(gridY / scaledGridSize);
+                const key = `${gridRow},${gridCol}`;
+
+                gridMap.set(key, (gridMap.get(key) || 0) + 1);
+            });
+
+            // 高效绘制：使用fabric.Group批量绘制所有高亮矩形
+            const rects = [];
+            const textObjects = [];
+
+            // 批量创建所有高亮矩形
+            gridMap.forEach((count, key) => {
+                const [row, col] = key.split(',').map(Number);
+                
+                // 网格在网格坐标系中的位置（从左上角(0,0)开始）
+                const gridX = col * scaledGridSize + scaledGridSize / 2;
+                const gridY = row * scaledGridSize + scaledGridSize / 2;
+                
+                // 将网格坐标转换为以图片中心为原点的相对坐标
+                const relX = gridX - centerX;
+                const relY = gridY - centerY;
+                
+                // 正向旋转坐标（将网格坐标转换回图片坐标系）
+                let x = relX * cos - relY * sin + centerX;
+                let y = relX * sin + relY * cos + centerY;
+                
+                // 应用平移
+                x += gridTranslateX;
+                y += gridTranslateY;
+
+                // 创建矩形（支持旋转，中心点在网格中心）
+                const rect = new fabric.Rect({
+                    left: x,
+                    top: y,
+                    width: scaledGridSize,
+                    height: scaledGridSize,
+                    fill: boxColor,
+                    opacity: 0.3,
+                    selectable: false,
+                    evented: false,
+                    originX: 'center',
+                    originY: 'center',
+                    angle: gridRotationAngle
+                });
+                rects.push(rect);
+
+                // 文字标签（只在网格足够大时显示，跟随旋转）
+                if (scaledGridSize >= 30) {
+                    const text = new fabric.Text(count.toString(), {
+                        left: x,
+                        top: y,
+                        fontSize: Math.min(20, scaledGridSize * 0.3),
+                        fill: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: false,
+                        evented: false,
+                        angle: gridRotationAngle
+                    });
+                    textObjects.push(text);
+                }
+            });
+
+            // 使用Group批量添加矩形（比逐个add快得多）
+            if (rects.length > 0) {
+                const highlightGroup = new fabric.Group(rects, {
+                    selectable: false,
+                    evented: false
+                });
+                fabricCanvas.add(highlightGroup);
+                detectionObjects.push(highlightGroup);
+
+                // 批量添加文字
+                if (textObjects.length > 0) {
+                    fabricCanvas.add(...textObjects);
+                    textObjects.forEach(text => detectionObjects.push(text));
+                }
+            }
+
+            fabricCanvas.renderAll();
+        }
+
+        // 切换网格显示
+        function toggleGrid() {
+            gridVisible = !gridVisible;
+            gridObjects.forEach(obj => {
+                obj.visible = gridVisible;
+            });
+            fabricCanvas.renderAll();
+        }
+
+        // 重置视图（缩放和平移）
+        function resetView() {
+            fabricCanvas.setZoom(1);
+            fabricCanvas.viewportTransform = [1, 0, 0, 1, 0, 0];
+            // 重置缩放后重新绘制网格，以调整线宽
+            if (currentImage) {
+                drawGrid();
+            }
+            fabricCanvas.renderAll();
+        }
+
+        // 旋转和平移网格 - 只操作网格，不操作图片
+        let gridRotationAngle = 0;
+        let gridTranslateX = 0; // 网格左右平移（像素）
+        let gridTranslateY = 0; // 网格上下平移（像素）
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
+        
+        function rotateCanvas(angle) {
+            if (!currentImage) return;
+            
+            gridRotationAngle = angle % 360;
+            if (gridRotationAngle < 0) gridRotationAngle += 360;
+            
+            // 更新显示
+            if (document.getElementById('rotateValue')) {
+                document.getElementById('rotateValue').textContent = Math.round(gridRotationAngle) + '°';
+            }
+            
+            // 图片保持不动，只重新绘制网格和检测结果
+            redrawGridAndDetections();
+        }
+        
+        function rotateGrid(angle) {
+            if (!currentImage) return;
+            
+            gridRotationAngle = angle;
+            
+            // 更新显示
+            if (document.getElementById('rotateValue')) {
+                document.getElementById('rotateValue').textContent = Math.round(gridRotationAngle);
+            }
+            
+            // 更新滑动条值（如果存在）
+            const rotateSlider = document.getElementById('rotateSlider');
+            if (rotateSlider) {
+                rotateSlider.value = gridRotationAngle;
+                updateSliderFill(rotateSlider);
+            }
+            
+            // 图片保持不动，只重新绘制网格和检测结果
+            redrawGridAndDetections();
+        }
+        
+        function translateGridX(value) {
+            if (!currentImage) return;
+            
+            gridTranslateX = value;
+            
+            // 更新显示
+            if (document.getElementById('translateXValue')) {
+                document.getElementById('translateXValue').textContent = gridTranslateX;
+            }
+            
+            // 更新滑动条值（如果存在）
+            const translateXSlider = document.getElementById('translateXSlider');
+            if (translateXSlider) {
+                translateXSlider.value = gridTranslateX;
+                updateSliderFill(translateXSlider);
+            }
+            
+            // 图片保持不动，只重新绘制网格和检测结果
+            redrawGridAndDetections();
+        }
+        
+        function translateGridY(value) {
+            if (!currentImage) return;
+            
+            gridTranslateY = value;
+            
+            // 更新显示
+            if (document.getElementById('translateYValue')) {
+                document.getElementById('translateYValue').textContent = gridTranslateY;
+            }
+            
+            // 更新滑动条值（如果存在）
+            const translateYSlider = document.getElementById('translateYSlider');
+            if (translateYSlider) {
+                translateYSlider.value = gridTranslateY;
+                updateSliderFill(translateYSlider);
+            }
+            
+            // 图片保持不动，只重新绘制网格和检测结果
+            redrawGridAndDetections();
+        }
+        
+        // 更新滑动条已填充部分的宽度
+        function updateSliderFill(slider) {
+            const sliderWrapper = slider.closest('.slider-wrapper');
+            if (sliderWrapper) {
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                const value = parseFloat(slider.value);
+                const percentage = ((value - min) / (max - min)) * 100;
+                sliderWrapper.style.setProperty('--fill-width', percentage + '%');
+            }
+        }
+
+        // 清空Canvas
+        function clearCanvas() {
+            fabricCanvas.clear();
+            currentImage = null;
+            detections = [];
+            gridObjects = [];
+            detectionObjects = [];
+            imageFile = null;
+            yoloFile = null;
+            gridRotationAngle = 0;
+            gridTranslateX = 0;
+            gridTranslateY = 0;
+            originalImageWidth = 0;
+            originalImageHeight = 0;
+            originalDetections = [];
+            // 重置滑动条和显示值
+            const rotateSlider = document.getElementById('rotateSlider');
+            if (rotateSlider) {
+                rotateSlider.value = 0;
+                updateSliderFill(rotateSlider);
+            }
+            if (document.getElementById('rotateValue')) {
+                document.getElementById('rotateValue').textContent = '0';
+            }
+            
+            const translateXSlider = document.getElementById('translateXSlider');
+            if (translateXSlider) {
+                translateXSlider.value = 0;
+                updateSliderFill(translateXSlider);
+            }
+            if (document.getElementById('translateXValue')) {
+                document.getElementById('translateXValue').textContent = '0';
+            }
+            
+            const translateYSlider = document.getElementById('translateYSlider');
+            if (translateYSlider) {
+                translateYSlider.value = 0;
+                updateSliderFill(translateYSlider);
+            }
+            if (document.getElementById('translateYValue')) {
+                document.getElementById('translateYValue').textContent = '0';
+            }
+            resetView();
+            document.getElementById('imageFileName').textContent = '未选择';
+            document.getElementById('yoloFileName').textContent = '未选择';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('yoloInput').value = '';
+            document.getElementById('controls').style.display = 'none';
+        }
+
+        // 显示/隐藏加载提示
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        // 显示/隐藏弹窗提示
+        function showError(message, type = 'error') {
+            const modal = document.getElementById('modal');
+            const modalBody = document.getElementById('modalBody');
+            const modalTitle = document.getElementById('modalTitleText');
+            const modalIcon = document.getElementById('modalIcon');
+            
+            // 设置消息内容
+            modalBody.textContent = message;
+            
+            // 根据类型设置样式和图标
+            modal.className = 'modal ' + type;
+            if (type === 'error') {
+                modalTitle.textContent = '错误';
+                modalIcon.textContent = '❌';
+            } else if (type === 'success') {
+                modalTitle.textContent = '成功';
+                modalIcon.textContent = '✅';
+            } else {
+                modalTitle.textContent = '提示';
+                modalIcon.textContent = '⚠️';
+            }
+            
+            // 显示弹窗
+            modal.classList.add('active');
+        }
+
+        function hideError() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+        }
+        
+        // 初始化弹窗关闭功能
+        function initModal() {
+            const modal = document.getElementById('modal');
+            const modalClose = document.getElementById('modalClose');
+            const modalOk = document.getElementById('modalOk');
+            
+            // 点击关闭按钮
+            if (modalClose) {
+                modalClose.addEventListener('click', hideError);
+            }
+            
+            // 点击确定按钮
+            if (modalOk) {
+                modalOk.addEventListener('click', hideError);
+            }
+            
+            // 点击背景关闭弹窗
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    hideError();
+                }
+            });
+            
+            // ESC键关闭弹窗
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    hideError();
+                }
+            });
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            initModal();
+            
+            // 添加网格大小滑动条的事件监听
+            const gridSizeInput = document.getElementById('gridSize');
+            const gridSizeValue = document.getElementById('gridSizeValue');
+            const boxColorInput = document.getElementById('boxColor');
+            const gridColorInput = document.getElementById('gridColor');
+            
+            // 更新滑动条显示值的函数
+            function updateGridSizeDisplay() {
+                const value = parseInt(gridSizeInput.value);
+                gridSizeValue.textContent = value;
+                
+                // 动态更新最小值、中间值、最大值显示
+                const min = parseInt(gridSizeInput.min);
+                const max = parseInt(gridSizeInput.max);
+                const mid = Math.round((min + max) / 2);
+                document.getElementById('gridSizeMin').textContent = min;
+                document.getElementById('gridSizeMid').textContent = mid;
+                document.getElementById('gridSizeMax').textContent = max;
+                
+                // 更新已填充部分的宽度（用于WebKit浏览器）
+                const sliderWrapper = gridSizeInput.closest('.slider-wrapper');
+                if (sliderWrapper) {
+                    const percentage = ((value - min) / (max - min)) * 100;
+                    sliderWrapper.style.setProperty('--fill-width', percentage + '%');
+                }
+            }
+            
+            // 初始化显示值
+            updateGridSizeDisplay();
+            
+            // 当网格大小改变时自动重新绘制（延迟执行，避免频繁触发）
+            let redrawTimer = null;
+            gridSizeInput.addEventListener('input', () => {
+                updateGridSizeDisplay();
+                clearTimeout(redrawTimer);
+                // 统一延迟，因为现在算法高效了
+                const delay = 300;
+                redrawTimer = setTimeout(() => {
+                    if (currentImage) {
+                        redrawGridAndDetections();
+                    }
+                }, delay);
+            });
+            
+            gridSizeInput.addEventListener('change', () => {
+                updateGridSizeDisplay();
+                clearTimeout(redrawTimer);
+                if (currentImage) {
+                    redrawGridAndDetections();
+                }
+            });
+            
+            // 当颜色改变时自动重新绘制
+            boxColorInput.addEventListener('change', () => {
+                if (currentImage) {
+                    drawDetections();
+                }
+            });
+            
+            gridColorInput.addEventListener('change', () => {
+                if (currentImage) {
+                    drawGrid();
+                }
+            });
+            
+            // 添加旋转角度滑动条的事件监听
+            const rotateSlider = document.getElementById('rotateSlider');
+            if (rotateSlider) {
+                const rotateValue = document.getElementById('rotateValue');
+                let rotateTimer = null;
+                
+                rotateSlider.addEventListener('input', () => {
+                    const value = parseInt(rotateSlider.value);
+                    rotateValue.textContent = value;
+                    updateSliderFill(rotateSlider);
+                    
+                    clearTimeout(rotateTimer);
+                    rotateTimer = setTimeout(() => {
+                        if (currentImage) {
+                            rotateGrid(value);
+                        }
+                    }, 50);
+                });
+                
+                rotateSlider.addEventListener('change', () => {
+                    const value = parseInt(rotateSlider.value);
+                    rotateValue.textContent = value;
+                    updateSliderFill(rotateSlider);
+                    clearTimeout(rotateTimer);
+                    if (currentImage) {
+                        rotateGrid(value);
+                    }
+                });
+                
+                // 初始化填充
+                updateSliderFill(rotateSlider);
+            }
+            
+            // 添加左右平移滑动条的事件监听
+            const translateXSlider = document.getElementById('translateXSlider');
+            if (translateXSlider) {
+                const translateXValue = document.getElementById('translateXValue');
+                let translateXTimer = null;
+                
+                translateXSlider.addEventListener('input', () => {
+                    const value = parseInt(translateXSlider.value);
+                    translateXValue.textContent = value;
+                    updateSliderFill(translateXSlider);
+                    
+                    clearTimeout(translateXTimer);
+                    translateXTimer = setTimeout(() => {
+                        if (currentImage) {
+                            translateGridX(value);
+                        }
+                    }, 50);
+                });
+                
+                translateXSlider.addEventListener('change', () => {
+                    const value = parseInt(translateXSlider.value);
+                    translateXValue.textContent = value;
+                    updateSliderFill(translateXSlider);
+                    clearTimeout(translateXTimer);
+                    if (currentImage) {
+                        translateGridX(value);
+                    }
+                });
+                
+                // 初始化填充
+                updateSliderFill(translateXSlider);
+            }
+            
+            // 添加上下平移滑动条的事件监听
+            const translateYSlider = document.getElementById('translateYSlider');
+            if (translateYSlider) {
+                const translateYValue = document.getElementById('translateYValue');
+                let translateYTimer = null;
+                
+                translateYSlider.addEventListener('input', () => {
+                    const value = parseInt(translateYSlider.value);
+                    translateYValue.textContent = value;
+                    updateSliderFill(translateYSlider);
+                    
+                    clearTimeout(translateYTimer);
+                    translateYTimer = setTimeout(() => {
+                        if (currentImage) {
+                            translateGridY(value);
+                        }
+                    }, 50);
+                });
+                
+                translateYSlider.addEventListener('change', () => {
+                    const value = parseInt(translateYSlider.value);
+                    translateYValue.textContent = value;
+                    updateSliderFill(translateYSlider);
+                    clearTimeout(translateYTimer);
+                    if (currentImage) {
+                        translateGridY(value);
+                    }
+                });
+                
+                // 初始化填充
+                updateSliderFill(translateYSlider);
+            }
+        });
+    </script>
+</body>
+</html>
