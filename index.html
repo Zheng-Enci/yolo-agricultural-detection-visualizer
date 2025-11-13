@@ -679,7 +679,7 @@
                 let zoom = fabricCanvas.getZoom();
                 zoom *= 0.999 ** delta;
                 // 限制缩放范围
-                if (zoom > 5) zoom = 5;
+                if (false) zoom = 5;
                 if (zoom < 0.1) zoom = 0.1;
                 
                 const point = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
