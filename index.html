@@ -213,6 +213,85 @@
             cursor: pointer;
         }
 
+        .divider-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .divider-total-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        .divider-total-row label {
+            color: #e0e0e0;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .divider-total {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 100px;
+            text-align: left;
+        }
+
+        .divider-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .divider-input-row label {
+            color: #e0e0e0;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .divider-input-row input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .divider-input-row input[type="number"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .divider-result-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        .divider-result-row label {
+            color: #e0e0e0;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .divider-result {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 100px;
+            text-align: left;
+        }
+
         .slider-container {
             display: flex;
             flex-direction: column;
@@ -641,6 +720,20 @@
             <div class="file-name" id="yoloFileName">未选择</div>
         </div>
     </div>
+    <div class="divider-input-group">
+        <div class="divider-total-row">
+            <label>检测出总苗数：</label>
+            <span class="divider-total" id="dividerTotal">0</span>
+        </div>
+        <div class="divider-input-row">
+            <label>请输入总芽数：</label>
+            <input type="number" id="dividerInput" value="1" min="1" step="1" placeholder="请输入整数" pattern="[0-9]*" inputmode="numeric">
+        </div>
+        <div class="divider-result-row">
+            <label>出芽率：</label>
+            <span class="divider-result" id="dividerResult">--</span>
+        </div>
+    </div>
     <div style="padding: 10px; background: #2a2a2a; border-radius: 5px; font-size: 12px; color: #e0e0e0; border: 1px solid #444;">
         <strong>💡 操作提示：</strong><br>
         鼠标滚轮 = 缩放<br>
@@ -866,6 +959,12 @@
 
             // 显示控制面板
             document.getElementById('controls').style.display = 'flex';
+
+            // 更新检测出总苗数显示
+            updateDividerTotal();
+            
+            // 更新除法计算结果
+            updateDividerResult();
 
         } catch (error) {
             showError('加载文件失败: ' + error.message);
@@ -1507,6 +1606,56 @@
         document.getElementById('imageInput').value = '';
         document.getElementById('yoloInput').value = '';
         document.getElementById('controls').style.display = 'none';
+        
+        // 更新检测出总苗数显示为0
+        updateDividerTotal();
+    }
+
+    // 更新检测出总苗数显示
+    function updateDividerTotal() {
+        const dividerTotal = document.getElementById('dividerTotal');
+        if (!dividerTotal) return;
+        
+        const totalCount = detections.length || originalDetections.length || 0;
+        dividerTotal.textContent = totalCount.toString();
+    }
+
+    // 更新除法计算结果
+    function updateDividerResult() {
+        const dividerInput = document.getElementById('dividerInput');
+        const dividerResult = document.getElementById('dividerResult');
+        
+        if (!dividerInput || !dividerResult) return;
+        
+        // 获取输入值并转换为整数
+        let dividerValue = parseInt(dividerInput.value);
+        
+        // 验证输入：必须是正整数
+        if (isNaN(dividerValue) || dividerValue < 1) {
+            // 如果输入无效，设置为最小值1
+            if (dividerInput.value !== '' && dividerInput.value !== null) {
+                dividerValue = 1;
+                dividerInput.value = 1;
+            } else {
+                dividerResult.textContent = '--';
+                return;
+            }
+        }
+        
+        // 确保输入框中的值也是整数（移除小数部分）
+        if (dividerInput.value !== dividerValue.toString()) {
+            dividerInput.value = dividerValue;
+        }
+        
+        const totalCount = detections.length || originalDetections.length || 0;
+        
+        if (dividerValue > 0 && totalCount > 0) {
+            // 计算出芽率：总数量 / 除数 * 100，并添加百分号
+            const result = ((totalCount / dividerValue) * 100).toFixed(2);
+            dividerResult.textContent = result + '%';
+        } else {
+            dividerResult.textContent = '--';
+        }
     }
 
     // 显示/隐藏加载提示
@@ -1748,6 +1897,66 @@
 
             // 初始化填充
             updateSliderFill(translateYSlider);
+        }
+
+        // 添加除法输入框的事件监听
+        const dividerInput = document.getElementById('dividerInput');
+        if (dividerInput) {
+            // 每次输入都立即重新计算（input事件）
+            dividerInput.addEventListener('input', function() {
+                // 阻止输入小数点和负号
+                const value = this.value;
+                if (value.includes('.') || value.includes('-') || value.includes('e') || value.includes('E')) {
+                    this.value = value.replace(/[.\-eE]/g, '');
+                }
+                // 立即更新结果
+                updateDividerResult();
+            });
+            
+            // 按键释放时也立即更新（确保实时响应）
+            dividerInput.addEventListener('keyup', function() {
+                updateDividerResult();
+            });
+            
+            // 失去焦点时也重新计算
+            dividerInput.addEventListener('change', function() {
+                updateDividerResult();
+            });
+            
+            // 按键时也验证（防止输入非数字字符）
+            dividerInput.addEventListener('keydown', function(e) {
+                // 允许：数字、退格、删除、Tab、方向键、Home、End
+                const allowedKeys = [
+                    'Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 
+                    'ArrowUp', 'ArrowDown', 'Home', 'End'
+                ];
+                
+                // 允许 Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                if (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+                    return;
+                }
+                
+                // 如果是允许的功能键，放行
+                if (allowedKeys.includes(e.key)) {
+                    return;
+                }
+                
+                // 只允许数字
+                if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+            
+            // 粘贴时验证
+            dividerInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                const integerValue = parseInt(paste);
+                if (!isNaN(integerValue) && integerValue >= 1) {
+                    this.value = integerValue;
+                    updateDividerResult();
+                }
+            });
         }
     });
 </script>
