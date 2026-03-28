@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO检测结果可视化 - 网格显示</title>
+    <title>农科院检测结果可视化 - 网格显示</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <style>
         * {
@@ -699,8 +699,8 @@
 </div>
 
 <div class="header">
-    <h1>🌽 YOLO检测结果可视化</h1>
-    <p>选择本地图片和YOLO标注文件，网格化显示检测结果</p>
+    <h1>🌽 农科院检测结果可视化</h1>
+    <p>选择本地图片和农科院标注文件，网格化显示检测结果</p>
     <div class="upload-section">
         <div class="file-input-group">
             <label>📷 选择图片文件:</label>
@@ -712,10 +712,10 @@
         </div>
 
         <div class="file-input-group">
-            <label>📄 选择YOLO标注文件 (.txt):</label>
+            <label>📄 选择农科院标注文件 (.txt):</label>
             <div class="file-input-wrapper">
                 <input type="file" id="yoloInput" accept=".txt">
-                <div class="file-input-button">选择YOLO标注文件</div>
+                <div class="file-input-button">选择农科院标注文件</div>
             </div>
             <div class="file-name" id="yoloFileName">未选择</div>
         </div>
@@ -899,7 +899,7 @@
         }
     });
 
-    // YOLO文件选择
+    // 农科院文件选择
     document.getElementById('yoloInput').addEventListener('change', function(e) {
         if (e.target.files.length > 0) {
             yoloFile = e.target.files[0];
@@ -916,7 +916,7 @@
     // 加载文件
     async function loadFiles() {
         if (!imageFile || !yoloFile) {
-            showError('请同时选择图片文件和YOLO标注文件');
+            showError('请同时选择图片文件和农科院标注文件');
             return;
         }
 
@@ -934,7 +934,7 @@
             imageWidth = originalImageWidth;
             imageHeight = originalImageHeight;
 
-            // 读取YOLO文件（使用原始尺寸解析，不受旋转影响）
+            // 读取农科院文件（使用原始尺寸解析，不受旋转影响）
             const text = await readYoloFile(yoloFile);
             originalDetections = parseYoloData(text, originalImageWidth, originalImageHeight);
             detections = originalDetections.map(d => ({...d})); // 深拷贝
@@ -984,7 +984,7 @@
         });
     }
 
-    // 读取YOLO文件
+    // 读取农科院文件
     function readYoloFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -994,7 +994,7 @@
         });
     }
 
-    // 解析YOLO数据
+    // 解析农科院数据
     function parseYoloData(text, imgWidth, imgHeight) {
         const detections = [];
         const lines = text.split('\n').filter(line => line.trim());
@@ -1003,7 +1003,7 @@
             const parts = line.trim().split(/\s+/);
 
             if (parts.length === 5) {
-                // 标准YOLO格式 (5列): class x_center y_center width height
+                // 标准农科院格式 (5列): class x_center y_center width height
                 const [cls, x_center_norm, y_center_norm, width_norm, height_norm] = parts.map(Number);
                 const confidence = 1.0;
 
